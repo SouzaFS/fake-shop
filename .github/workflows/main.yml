@@ -17,18 +17,41 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker Image
-        run: echo "Executando o comando Docker build"
-      - name: Envio da Imagem Docker
-        run: echo "Executando o comando Docker push"
+      - name: Build and Push of Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./src
+          push: true
+          file: ./src/Dockerfile
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/fakeshop:latest
+            ${{ vars.DOCKERHUB_USERNAME }}/fakeshop:v${{ github.run_number }}
 
   CD:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
     needs: [CI]
     steps:
-      - name: Autenticar na AWS
-        run:  echo "Executando o comando aws configure"
-      - name: Configurar o KubeCTL
-        run: echo "Executando o comando aws eks update-kubeconfig"
-      - name: Deploy os manifestos no Kubernetes
-        run: echo "Executando o comando kubectl apply"
+      - name: Get Project Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: KubeCTL Configure
+        run: aws eks update-kubeconfig --name challenge-k8s
+
+      - name: Deploy Kubernetes Manifest
+        uses: Azure/k8s-deploy@v5
+        with:
+          manifests: |
+            ./k8s/deployment.yaml
+          images: |
+            ${{ vars.DOCKERHUB_USERNAME }}/fakeshop:v${{ github.run_number }}
