@@ -53,7 +53,7 @@ spec:
     spec:
       containers:
         - name: fakeshop
-          image: devsouzafs/fakeshop:v2
+          image: devsouzafs/fakeshop
           ports:
             - containerPort: 5000
           env:
