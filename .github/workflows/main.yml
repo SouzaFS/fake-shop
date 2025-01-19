@@ -46,7 +46,7 @@ jobs:
           aws-region: us-east-1
 
       - name: KubeCTL Configure
-        run: aws eks update-kubeconfig --name challenge-k8s
+        run: aws eks update-kubeconfig --name challenge-cluster
 
       - name: Deploy Kubernetes Manifest
         uses: Azure/k8s-deploy@v5
